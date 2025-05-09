@@ -13,10 +13,14 @@ namespace PokemonReviewApp.Controllers
     {
         private readonly IOwnerRepository _ownerRepository;
         private readonly IMapper _mapper;
-        public OwnerController(IOwnerRepository ownerRepository ,IMapper mapper)
+        private readonly ICountryRepository _countryRepository;
+
+        public OwnerController(IOwnerRepository ownerRepository ,IMapper mapper,ICountryRepository country)
         {
             _ownerRepository = ownerRepository;
             _mapper = mapper;
+            _countryRepository = country;
+
         }
 
 
@@ -66,7 +70,38 @@ namespace PokemonReviewApp.Controllers
             return Ok(owner);
         }
 
+        [HttpPost]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        public IActionResult CreateOwner([FromQuery] int countryId, [FromBody] OwnerDto ownerCreate)
+        {
+            if (ownerCreate == null)
+                return BadRequest(ModelState);
+            
+            //aynı isim soyisim var mı yok mu?
+            var owners = _ownerRepository.GetOwners()
+                .Where(c => 
+                c.FirstName.Trim().ToUpper() == ownerCreate.FirstName.TrimEnd().ToUpper() && 
+                c.LastName.Trim().ToUpper() == ownerCreate.LastName.TrimEnd().ToUpper())
+                .FirstOrDefault();
+            
+            if (owners != null)
+            {
+                ModelState.AddModelError("", "Owners already exists");
+                return StatusCode(422, ModelState);
+            }
+            var ownerMap = _mapper.Map<Owner>(ownerCreate);
 
+            ownerMap.Country = _countryRepository.GetCountry(countryId);
+
+            if (!_ownerRepository.CreateOwner(ownerMap))
+            {
+                ModelState.AddModelError("", $"Something went wrong when saving the record {ownerMap.FirstName}");
+                return StatusCode(500, ModelState);
+            }
+            return Ok("Successfully created");
+
+        }
 
 
 
