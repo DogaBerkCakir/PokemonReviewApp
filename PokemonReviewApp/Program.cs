@@ -13,6 +13,9 @@ namespace PokemonReviewApp
 
             // Add services to the container.
             builder.Services.AddScoped<IPokemonRepository, PokemonRepository>();
+            builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+            builder.Services.AddScoped<ICountryRepository, CountryRepository>();
+            builder.Services.AddScoped<IOwnerRepository, OwnerRepository>();
             builder.Services.AddControllers();
             object value = builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies()); // AutoMapper için gerekli
 
