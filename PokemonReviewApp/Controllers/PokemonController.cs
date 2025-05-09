@@ -15,11 +15,15 @@ namespace PokemonReviewApp.Controllers
         private readonly IPokemonRepository _pokemonRepository;
         private readonly DataContext _context;
         private readonly IMapper _mapper;
-        public PokemonController(IPokemonRepository pokemonRepository,DataContext context , IMapper mapper)
+        private readonly IOwnerRepository _ownerRepository;
+        private readonly IReviewRepository _reviewRepository;
+        public PokemonController(IPokemonRepository pokemonRepository,DataContext context , IMapper mapper,IOwnerRepository ownerRepository,IReviewRepository reviewRepository)
         {
             _pokemonRepository = pokemonRepository;
             _context = context;
             _mapper = mapper;
+            _ownerRepository = ownerRepository;
+            _reviewRepository = reviewRepository;
         }
 
         [HttpGet]
@@ -90,6 +94,29 @@ namespace PokemonReviewApp.Controllers
             }
 
             return Ok("Successfully created");
+        }
+
+        [HttpPut("{pokemonId}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public IActionResult UpdatePokemon(int pokemonId, [FromQuery] int ownerId, [FromQuery] int catId, [FromBody] PokemonDto pokemonUpdate)
+        {
+            if (pokemonUpdate == null)
+                return BadRequest(ModelState);
+            if (pokemonId != pokemonUpdate.Id)
+                return BadRequest(ModelState);
+            if (!_pokemonRepository.PokemonExists(pokemonId))
+                return NotFound();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            var pokemonMap = _mapper.Map<Pokemon>(pokemonUpdate);
+            if (!_pokemonRepository.UpdatePokemon(ownerId, catId, pokemonMap))
+            {
+                ModelState.AddModelError("", "Something went wrong while updating");
+                return StatusCode(500, ModelState);
+            }
+            return Ok("Successfully updated");
         }
     }
    
